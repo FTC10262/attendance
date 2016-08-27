@@ -2,8 +2,13 @@
 require 'rubygems'
 require 'bundler/setup'
 
+require_relative 'rfid.rb'
 require_relative 'attendance_sheet.rb'
 
 attendance = AttendanceSheet.new
 
+while true
+  attendance.process_log_file
+  sleep 1
+end
 

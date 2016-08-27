@@ -7,11 +7,12 @@ require_relative 'attendance_sheet.rb'
 
 attendance = AttendanceSheet.new
 begin
-  # RfidReader.open("/dev/cu.usbserial-AI03L08K") do |rfid|
-  RfidReader.open("/dev/ttyUSB0") do |rfid|
+  RfidReader.open("/dev/tty.usbserial-AI03L08K") do |rfid|
+  #RfidReader.open("/dev/ttyUSB0") do |rfid|
     begin
-      attendance.update(rfid)
-      attendance.save
+      attendance.log(rfid)
+      #attendance.update(rfid)
+      #attendance.save
     rescue
       puts "Unable to update attendance record: #{$!}" 
     end
