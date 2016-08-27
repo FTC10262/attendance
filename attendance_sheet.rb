@@ -88,11 +88,13 @@ class AttendanceSheet
           raise "Unable to find rfid #{rfid}" unless row.to_i > 0
 
           col = find_date(date)
-          raise "Unable to find date #{date}" unless col.to_i > 0
-
-          #puts "Setting #{rfid} to present on #{date} in row #{row} col #{col.inspect}"
-          attendance[row,col] = "X"
-          count += 1
+          if col.to_i > 0
+            #puts "Setting #{rfid} to present on #{date} in row #{row} col #{col.inspect}"
+            attendance[row,col] = "X"
+            count += 1
+          else
+            puts "Unable to find date #{date}" 
+          end
         end
       end
 
