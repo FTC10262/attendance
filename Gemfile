@@ -7,3 +7,4 @@ gem 'prawn-table'
 gem 'barby'
 gem 'chunky_png'
 gem "serialport"
+

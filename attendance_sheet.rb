@@ -1,11 +1,22 @@
 cert_path = Gem.loaded_specs['google-api-client'].full_gem_path+'/lib/cacerts.pem'
 ENV['SSL_CERT_FILE'] = cert_path
 require "google_drive"
+require 'ostruct'
+require 'yaml'
 
 class AttendanceSheet
+  FNAME_COLUMN = 1
+  LNAME_COLUMN = 2
   RFID_COLUMN = 11
+  CACHE_FNAME = 'rfid-cache.yml'
 
   def initialize
+    if File.exists?(CACHE_FNAME)
+      # read cached data
+    else
+      cache
+    end
+
     puts "Connecting to order forms"
     # Creates a session. This will prompt the credential via command line for the
     # first time and save it to config.json file for later usages.
@@ -62,47 +73,33 @@ class AttendanceSheet
   def save
     @attendance.save
   end
-end
 
-__END__
+  def self.cache
+    return if File.exists?(CACHE_FNAME)
 
-puts "Connecting to order forms"
-# Creates a session. This will prompt the credential via command line for the
-# first time and save it to config.json file for later usages.
-session = GoogleDrive.saved_session("config.json")
+    roster = @ss.worksheets[0]
+    raise "Unable to find roster" unless roster.title == "Roster"
 
-# Open our responses
-ss = session.spreadsheet_by_title("2016 Spring Spirit Wear Orders")
-ws = ss.worksheets[0]
+    rfid = {}
 
-puts "Scanning orders"
-sent = 0
-(2..ws.num_rows).each do |row|
-  next if ws[row, ws.num_cols].to_s.match "TRUE"
+    # collect names, RFID and columns
+    (2..roster.num_rows).each do |row|
+      id = roster[row, RFID_COLUMN]
+      next if id.to_s.strip.empty?
 
-  row_array = (1..ws.num_cols).map { |col| ws[row, col] }
-  order = row_2_order(row_array)
-  inv = InvoicePdf.new(order).render
+      fname = roster[row, FNAME_COLUMN]
+      lname = roster[row, LNAME_COLUMN]
 
-  begin
-    email = Mailer.receipt_email(order,inv)
-    email.deliver_now
-    ws[row, ws.num_cols] = true
-    sent += 1
-  rescue
-    #STDERR.puts PP.pp(order, "Unable to process order:")
-    STDERR.puts $!
+      rfid[id] = { 
+        :name => "#{lname}, #{fname}",
+        :row => row + 2
+      }
+    end
+
+    File.open(CACHE_FNAME, "w") do |io|
+      io.puts rfid.to_yaml
+    end    
   end
+
 end
-
-puts "Sent #{sent} emails"
-ws.save
-puts "Orders updated with email status" if sent > 0
-
-__END__
-# Uploads a local file.
-session.upload_from_file("/path/to/hello.txt", "hello.txt", convert: false)
-
-# Updates content of the remote file.
-file.update_from_file("/path/to/hello.txt")
 
